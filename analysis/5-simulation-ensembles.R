@@ -21,7 +21,7 @@ dsim <- dsim %>%
 
 # summarise the mean and slope in the last N years:
 library("doParallel")
-registerDoParallel(cores = 4)
+registerDoParallel(cores = 2)
 
 dsim_sum <- plyr::ddply(dsim, c("stockid", "method", "iter"),
   .parallel = TRUE, .fun = mean_slope_bbmsy)
@@ -133,6 +133,16 @@ m <- gbm::gbm(log(bbmsy_true_mean) ~ CMSY + COMSIR + Costello + SSCOM +
     spec_freq_0.05 + spec_freq_0.2, distribution = "gaussian",
   data = d_mean, n.trees = 2000L, interaction.depth = 6, shrinkage = 0.01)
 
+# m_lm1 <- lm(log(bbmsy_true_mean) ~ CMSY + COMSIR + Costello + SSCOM +
+#     spec_freq_0.05 + spec_freq_0.2, data = d_mean)
+# m_lm2 <- lm(log(bbmsy_true_mean) ~ (CMSY + COMSIR + Costello + SSCOM +
+#     spec_freq_0.05 + spec_freq_0.2)^2, data = d_mean)
+# m_lm3 <- lm(log(bbmsy_true_mean) ~ (CMSY + COMSIR + Costello + SSCOM +
+#     spec_freq_0.05 + spec_freq_0.2)^3, data = d_mean)
+# m_lm4 <- lm(log(bbmsy_true_mean) ~ (CMSY + COMSIR + Costello + SSCOM +
+#     spec_freq_0.05 + spec_freq_0.2)^4, data = d_mean)
+# AIC(m_lm1, m_lm2, m_lm3, m_lm4)
+
 make_partial_resid_gbm <- function(var = "SSCOM") {
   d_temp <- d_mean
   d_temp$x <- d_mean[,var]
@@ -230,36 +240,48 @@ message(paste("zlim were", round(zlim, 2), collapse = " "))
 # the base form of the ensemble models:
 eq <- paste0("CMSY + COMSIR + Costello + ",
   "SSCOM + spec_freq_0.05 + spec_freq_0.2")
-eq_basic <- paste0("CMSY + COMSIR + Costello + SSCOM")
+eq_basic <- "CMSY + COMSIR + Costello + SSCOM"
 
 # work through cross validation of ensemble models:
 cv_sim_mean <- plyr::ldply(seq_len(4), .parallel = TRUE,
   .fun = function(.n)
     cross_val_ensembles(.n = .n, dat = d_mean, geo_mean = TRUE, id = "sim-mean",
       gbm_formula = paste0("log(bbmsy_true_mean) ~ ", eq),
-      lm_formula = paste0("log(bbmsy_true_mean) ~ (", eq, ")^2"), weighted = TRUE))
+      lm_formula1 = paste0("log(bbmsy_true_mean) ~ ", eq),
+      lm_formula2 = paste0("log(bbmsy_true_mean) ~ (", eq, ")^2"),
+      lm_formula3 = paste0("log(bbmsy_true_mean) ~ (", eq, ")^3"),
+      weighted = TRUE))
 cv_sim_mean <- cv_sim_mean %>% mutate(
   gbm_ensemble = exp(gbm_ensemble),
   rf_ensemble  = exp(rf_ensemble),
-  lm_ensemble  = exp(lm_ensemble))
+  lm_ensemble1  = exp(lm_ensemble1),
+  lm_ensemble2  = exp(lm_ensemble2),
+  lm_ensemble3  = exp(lm_ensemble3))
 cv_sim_mean$cv_id <- NULL
 
 cv_sim_mean_basic <- plyr::ldply(seq_len(4), .parallel = TRUE,
   .fun = function(.n)
     cross_val_ensembles(.n = .n, dat = d_mean, geo_mean = TRUE, id = "sim-mean",
       gbm_formula = paste0("log(bbmsy_true_mean) ~ ", eq_basic),
-      lm_formula = paste0("log(bbmsy_true_mean) ~ (", eq_basic, ")^2"), weighted = TRUE))
+      lm_formula1 = paste0("log(bbmsy_true_mean) ~ ", eq_basic),
+      lm_formula2 = paste0("log(bbmsy_true_mean) ~ (", eq_basic, ")^2"),
+      lm_formula3 = paste0("log(bbmsy_true_mean) ~ (", eq_basic, ")^3"),
+      weighted = TRUE))
 cv_sim_mean_basic <- cv_sim_mean_basic %>% mutate(
   gbm_ensemble = exp(gbm_ensemble),
   rf_ensemble  = exp(rf_ensemble),
-  lm_ensemble  = exp(lm_ensemble))
+  lm_ensemble1  = exp(lm_ensemble1),
+  lm_ensemble2  = exp(lm_ensemble2),
+  lm_ensemble3  = exp(lm_ensemble3))
 cv_sim_mean_basic$cv_id <- NULL
 
-cv_sim_slope <- plyr::ldply(seq_len(2), .parallel = TRUE,
+cv_sim_slope <- plyr::ldply(seq_len(4), .parallel = TRUE,
   .fun = function(.n)
     cross_val_ensembles(.n = .n, dat = d_slope, geo_mean = FALSE, id = "sim-slope",
       gbm_formula = paste0("bbmsy_true_slope ~ ", eq),
-      lm_formula = paste0("bbmsy_true_slope ~ (", eq, ")^2")))
+      lm_formula1 = paste0("bbmsy_true_slope ~ (", eq, ")"),
+      lm_formula2 = paste0("bbmsy_true_slope ~ (", eq, ")^2"),
+      lm_formula3 = paste0("bbmsy_true_slope ~ (", eq, ")^3")))
 cv_sim_slope$cv_id <- NULL
 
 cv_sim_binary <- plyr::ldply(seq_len(2), .parallel = TRUE,

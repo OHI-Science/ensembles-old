@@ -8,16 +8,21 @@ d_sim <- readRDS("generated-data/cv_sim_long.rds")
 
 clean_names <- dplyr::data_frame(
   method = c("CMSY", "COMSIR", "Costello", "SSCOM",
-    "gbm_ensemble", "rf_ensemble", "lm_ensemble", "mean_ensemble"),
+    "gbm_ensemble", "rf_ensemble", "lm_ensemble3", "mean_ensemble",
+    "lm_ensemble2", "lm_ensemble1"),
   clean_method = c("CMSY", "COM-SIR", "mPRM", "SSCOM",
-    "GBM Ensemble", "RF Ensemble", "LM Ensemble", "Mean Ensemble"),
-  order = c(1, 2, 4, 3, 8, 7, 6, 5),
+    "GBM Ensemble", "RF Ensemble", "LM Ensemble3", "Mean Ensemble",
+    "LM Ensemble2", "LM Ensemble1"),
+  order = c(1, 2, 4, 3, 8, 7, 6, 5, 9, 10),
   label_fudge_x = c(
     0, -0.03,0,-0.04,
-    0, 0,0,-0.05),
+    0, 0,0,-0.05, 0, 0),
   label_fudge_y = c(
     0, -0.02,0.03,0.04,
-    0, 0.02,0,-0.02))
+    0, 0.02,0,-0.02, 0, 0))
+# these have higher MARE and lower corr in the CV simulated dataset testing than 3-way interactions:
+clean_names <- clean_names %>% filter(!method %in% c("lm_ensemble1", "lm_ensemble2"))
+clean_names$clean_method <- sub("LM Ensemble3", "LM Ensemble", clean_names$clean_method)
 
 d_sim <- suppressWarnings(inner_join(d_sim, clean_names))
 
@@ -198,18 +203,18 @@ pdf("../figs/hex-mean-sim-basic-cv.pdf", width = 8, height = 4)
 plot_hex_fig(d_sim_basic, xbins = 100L)
 dev.off()
 
-## Performance panel figures:
-pdf("../figs/performance.pdf", width = 6, height = 3.1)
-par(mfrow = c(1, 2), mgp = c(1.5, 0.4, 0), las = 1, tck = -0.012,
-  oma = c(2.7, 3.5, .5, .5), cex = 0.8, mar = c(0, 0, 0, 0),
-  xaxs = "i", yaxs = "i", col.axis = "grey50", col.lab = "grey50")
-par(xpd = FALSE)
-performance_panel(d_sim_perf_summ, xlim = c(0.2, 0.6), ylim = c(0.1, 0.7))
-performance_panel(re_ram_sum_long, xlim =  c(0.48, 0.65), ylim = c(0.15, 0.45))
-mtext("Within population inaccuracy (MAPE)", side = 1, line = 1.4, col = "grey40", cex = 0.8, outer = TRUE)
-mtext("Across population correlation", side = 2, line = 2.2, col = "grey40", las = 0, cex = 0.8, outer = TRUE)
-#text(0.54, 0.5, "Bias (MPE)", col = "grey30", pos = 4)
-dev.off()
+# ## Performance panel figures:
+# pdf("../figs/performance.pdf", width = 6, height = 3.1)
+# par(mfrow = c(1, 2), mgp = c(1.5, 0.4, 0), las = 1, tck = -0.012,
+#   oma = c(2.7, 3.5, .5, .5), cex = 0.8, mar = c(0, 0, 0, 0),
+#   xaxs = "i", yaxs = "i", col.axis = "grey50", col.lab = "grey50")
+# par(xpd = FALSE)
+# performance_panel(d_sim_perf_summ, xlim = c(0.2, 0.6), ylim = c(0.1, 0.7))
+# performance_panel(re_ram_sum_long, xlim =  c(0.48, 0.65), ylim = c(0.15, 0.45))
+# mtext("Within population inaccuracy (MAPE)", side = 1, line = 1.4, col = "grey40", cex = 0.8, outer = TRUE)
+# mtext("Across population correlation", side = 2, line = 2.2, col = "grey40", las = 0, cex = 0.8, outer = TRUE)
+# #text(0.54, 0.5, "Bias (MPE)", col = "grey30", pos = 4)
+# dev.off()
 
 # base:
 

@@ -31,7 +31,8 @@ cross_val_ensembles <- function(.n, dat, fraction_train = 0.5,
   geo_mean = TRUE,
   individual_models = c("CMSY", "COMSIR", "Costello", "SSCOM"),
   id = "mean", cache_folder = "generated-data/cv-sim/", distribution = "gaussian",
-  lm_formula = "", glm_formula = "", nfold = 3L, weighted = FALSE) {
+  lm_formula1 = "", lm_formula2 = "", lm_formula3 = "", glm_formula = "",
+  nfold = 3L, weighted = FALSE) {
 
   ids <- unique(dat$cv_id)
   ids_scrambled <- base::sample(ids)
@@ -66,9 +67,19 @@ cross_val_ensembles <- function(.n, dat, fraction_train = 0.5,
     test_dat$rf_ensemble <- tryCatch({predict(m_rf, newdata = test_dat)},
       error = function(e) rep(NA, nrow(test_dat)))
 
-    if (lm_formula != "") {
-      m_lm <- lm(as.formula(lm_formula), data = train_dat)
-      test_dat$lm_ensemble <- tryCatch({predict(m_lm, newdata = test_dat)},
+    if (lm_formula1 != "") {
+      m_lm1 <- lm(as.formula(lm_formula1), data = train_dat)
+      test_dat$lm_ensemble1 <- tryCatch({predict(m_lm1, newdata = test_dat)},
+        error = function(e) rep(NA, nrow(test_dat)))
+    }
+    if (lm_formula2 != "") {
+      m_lm2 <- lm(as.formula(lm_formula2), data = train_dat)
+      test_dat$lm_ensemble2 <- tryCatch({predict(m_lm2, newdata = test_dat)},
+        error = function(e) rep(NA, nrow(test_dat)))
+    }
+    if (lm_formula3 != "") {
+      m_lm3 <- lm(as.formula(lm_formula3), data = train_dat)
+      test_dat$lm_ensemble3 <- tryCatch({predict(m_lm3, newdata = test_dat)},
         error = function(e) rep(NA, nrow(test_dat)))
     }
 

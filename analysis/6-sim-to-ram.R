@@ -58,10 +58,44 @@ m_gbm <- gbm::gbm(
   data = d_mean_sim, distribution = "gaussian",
   n.trees = 2000L, interaction.depth = 6, shrinkage = 0.01)
 
-m_lm <- lm(
+m_lm1 <- lm(
+  log(bbmsy_true_mean) ~ (CMSY + COMSIR + Costello + SSCOM +
+      spec_freq_0.05 + spec_freq_0.2),
+  data = d_mean_sim)
+
+m_lm2 <- lm(
   log(bbmsy_true_mean) ~ (CMSY + COMSIR + Costello + SSCOM +
       spec_freq_0.05 + spec_freq_0.2)^2,
   data = d_mean_sim)
+
+m_lm3 <- lm(
+  log(bbmsy_true_mean) ~ (CMSY + COMSIR + Costello + SSCOM +
+      spec_freq_0.05 + spec_freq_0.2)^3,
+  data = d_mean_sim)
+
+pdf("../figs/lm-coefs.pdf", width = 9, height = 13.5)
+par(mfrow = c(2, 2))
+par(mar = c(4, 15, 1, 1), cex = 0.9)
+par(xpd = FALSE)
+arm::coefplot(m_lm1, main = "")
+par(xpd = NA)
+mtext("(a) Coefficient\n(no interactions)", side = 3, line = 2)
+par(xpd = FALSE)
+arm::coefplot(m_lm2, main = "")
+par(xpd = NA)
+mtext("(b) Coefficient\n(with 2-way interactions)", side = 3, line = 2)
+par(xpd = FALSE)
+arm::coefplot(m_lm3, main = "")
+par(xpd = NA)
+mtext("(c) Coefficient\n(with 3-way interactions)", side = 3, line = 2)
+dev.off()
+# plot the coefficients:
+# coef(m_lm3)
+# co <- summary(m_lm3)$coefficients[,1:2]
+# co <- data_frame(coef = as.character(rownames(co)), est = co[,1], sd = co[,2]) %>%
+#   as.data.frame
+# # count number of ":"
+# co$coef_level <- plyr::laply(strsplit(co$coef, split = ""), function(x) sum(grepl(":", x)))
 
 library("mgcv")
 m_gam <- mgcv::gam(
@@ -161,7 +195,9 @@ cv_ensemble_ram <- function(nfold = 3L, .n = 1L) {
       } else {
         d_test$mean_ensemble <- rowMeans(d_test[, individual_models])
       }
-      d_test$lm_ensemble <- exp(predict(m_lm, newdata = d_test))
+      d_test$lm_ensemble1 <- exp(predict(m_lm1, newdata = d_test))
+      d_test$lm_ensemble2 <- exp(predict(m_lm2, newdata = d_test))
+      d_test$lm_ensemble3 <- exp(predict(m_lm3, newdata = d_test))
       d_test$gam_ensemble <- exp(predict(m_gam, newdata = d_test))
       d_test$.n = .n # for identification purposes
 
